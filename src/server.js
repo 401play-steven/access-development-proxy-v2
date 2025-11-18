@@ -9,6 +9,7 @@ const app = express();
 
 app.set("view engine", "ejs");
 app.set("views", path.resolve(__dirname, "./views"));
+app.use(express.static(path.resolve(__dirname, "../public")));
 app.use(morgan("dev"));
 app.use(cors());
 app.use(express.json());

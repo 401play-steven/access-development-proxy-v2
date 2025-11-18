@@ -79,12 +79,21 @@
             gap: 4px;
         }
 
+        .header-image {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: cover;
+            background: #fff;
+        }
+
         .webview-container {
             width: 100%;
-            height: calc(100% - 44px);
+            flex: 1;
             overflow: hidden;
             background: #fff;
             position: relative;
+            min-height: 0;
         }
 
         .webview-iframe {
@@ -92,6 +101,21 @@
             height: 100%;
             border: none;
             display: block;
+        }
+
+        .footer-image {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: cover;
+            background: #fff;
+        }
+
+        .content-wrapper {
+            display: flex;
+            flex-direction: column;
+            height: calc(100% - 44px);
+            width: 100%;
         }
     </style>
 </head>
@@ -109,13 +133,17 @@
                     <span>🔋</span>
                 </div>
             </div>
-            <div class="webview-container">
-                <iframe 
-                    id="webviewFrame" 
-                    class="webview-iframe" 
-                    src="<%= webviewUrl %>"
-                    allow="geolocation; microphone; camera; payment; fullscreen">
-                </iframe>
+            <div class="content-wrapper">
+                <img src="/header.png" alt="Header" class="header-image" />
+                <div class="webview-container">
+                    <iframe 
+                        id="webviewFrame" 
+                        class="webview-iframe" 
+                        src="<%= webviewUrl %>"
+                        allow="geolocation; microphone; camera; payment; fullscreen">
+                    </iframe>
+                </div>
+                <img src="/footer.png" alt="Footer" class="footer-image" />
             </div>
         </div>
     </div>

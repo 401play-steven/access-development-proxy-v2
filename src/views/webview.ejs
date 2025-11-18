@@ -14,13 +14,16 @@
         body {
             width: 100%;
             height: 100vh;
-            overflow: hidden;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
         }
         
         #travelClient {
             width: 100%;
             height: 100%;
             border: none;
+            min-height: 100%;
         }
     </style>
 </head>
@@ -29,6 +32,111 @@
     <script src="<%= scriptUrl %>" async></script>
     <script>
         var session_token = '<%= token || "" %>';
+        
+        function setupErrorHandling() {
+            if (!window.travelClient) {
+                return;
+            }
+            
+            // Set up error event listener per Travel SDK documentation
+            // https://developers.accessdevelopment.com/travel-sdk/travel-client-SDK/on-error-method
+            window.travelClient.on("error", function(event) {
+                console.log("Travel Client Error Code: " + event.error_code);
+                console.log("Travel Client Error Message: " + event.error_message);
+                console.log("Travel Client Error Type: " + event.error_type);
+                console.log("Travel Client Error Status: " + event.status);
+                
+                // Handle errors based on error_type
+                if (event.error_type === "error") {
+                    // High priority errors - may stop the travel application
+                    console.error("Travel Client Critical Error:", {
+                        error_code: event.error_code,
+                        error_message: event.error_message,
+                        status: event.status
+                    });
+                } else if (event.error_type === "warn") {
+                    // Low priority warnings - application may still run
+                    console.warn("Travel Client Warning:", {
+                        error_code: event.error_code,
+                        error_message: event.error_message,
+                        status: event.status
+                    });
+                }
+            });
+        }
+        
+        function setupUpdateHandling() {
+            if (!window.travelClient) {
+                return;
+            }
+            
+            // Set up update event listener per Travel SDK documentation
+            // https://developers.accessdevelopment.com/travel-sdk/travel-client-SDK/on-update-method
+            window.travelClient.on("update", function(event) {
+                // Handle specific update codes
+                switch (event.update_code) {
+                    case "TRAVEL_CLIENT_LOADED":
+                        console.log("Travel Client loaded successfully", {
+                            update_code: event.update_code,
+                            update_message: event.update_message
+                        });
+                        break;
+                        
+                    case "ACTIVE_SESSION_PING":
+                        // User is active - can be used to keep session alive or measure inactivity
+                        // Note: This fires frequently, so we'll use a more concise log
+                        console.log("Active session ping");
+                        break;
+                        
+                    case "SESSION_NOT_FOUND":
+                        // Session not found - stops the travel application
+                        console.error("Session Not Found:", {
+                            update_code: event.update_code,
+                            update_message: event.update_message
+                        });
+                        break;
+                        
+                    case "TRAVEL_CLIENT_SESSION_EXPIRED":
+                        // Session expired after 60 minutes of inactivity
+                        console.error("Session Expired:", {
+                            update_code: event.update_code,
+                            update_message: event.update_message
+                        });
+                        break;
+                        
+                    default:
+                        console.log("Travel Client Update:", {
+                            update_code: event.update_code,
+                            update_message: event.update_message
+                        });
+                }
+            });
+        }
+        
+        function setupEventHandler() {
+            if (!window.travelClient) {
+                return;
+            }
+            
+            // Set up event listener per Travel SDK documentation
+            // https://developers.accessdevelopment.com/travel-sdk/travel-client-SDK/on-event-method
+            window.travelClient.on("event", function(event) {
+                // Handle specific event codes
+                if (event.event_code === "FLIGHT_SEARCH") {
+                    console.log("User performed a flight search:", {
+                        event_code: event.event_code,
+                        event_detail: event.event_detail,
+                        event_dts: event.event_dts
+                    });
+                } else {
+                    console.log("Travel Client Event:", {
+                        event_code: event.event_code,
+                        event_detail: event.event_detail,
+                        event_dts: event.event_dts
+                    });
+                }
+            });
+        }
         
         function initTravelClient() {
             if (!session_token) {
@@ -40,6 +148,11 @@
                 console.error('Travel Client SDK not loaded');
                 return;
             }
+            
+            // Set up all event handlers before initializing
+            setupErrorHandling();
+            setupUpdateHandling();
+            setupEventHandler();
             
             try {
                 window.travelClient.start({
