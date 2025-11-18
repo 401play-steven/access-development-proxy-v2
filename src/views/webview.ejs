@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel Client</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        #travelClient {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="travelClient"></div>
+    <script src="<%= scriptUrl %>" async></script>
+    <script>
+        var session_token = '<%= token || "" %>';
+        
+        function initTravelClient() {
+            if (!session_token) {
+                console.error('Session token is missing');
+                return;
+            }
+            
+            if (!window.travelClient) {
+                console.error('Travel Client SDK not loaded');
+                return;
+            }
+            
+            try {
+                window.travelClient.start({
+                    session_token: session_token,
+                    container: "#travelClient"
+                });
+                console.log('Travel Client initialized successfully');
+            } catch (error) {
+                console.error('Error initializing Travel Client:', error);
+            }
+        }
+        
+        // Wait for script to fully load
+        function waitForSDK() {
+            if (window.travelClient) {
+                initTravelClient();
+            } else {
+                setTimeout(waitForSDK, 100);
+            }
+        }
+        
+        // Start checking once page is loaded
+        if (document.readyState === 'complete') {
+            waitForSDK();
+        } else {
+            window.addEventListener('load', function() {
+                waitForSDK();
+            });
+        }
+    </script>
+</body>
+</html>
+
