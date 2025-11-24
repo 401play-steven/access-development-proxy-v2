@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel Client - Back Button Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            width: 100%;
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        #travelClient {
+            width: 100%;
+            height: 100%;
+            border: none;
+            min-height: 100%;
+        }
+
+        .back-button {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 56px;
+            height: 56px;
+            background: #667eea;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            transition: opacity 0.5s ease, visibility 0.5s ease, transform 0.3s ease;
+            border: none;
+            padding: 0;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .back-button.visible {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        .back-button svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
+            stroke: white;
+        }
+
+        .back-button:hover {
+            background: #5568d3;
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+        }
+
+        .back-button:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <div id="travelClient"></div>
+    <button class="back-button" id="backButton" title="Go back" aria-label="Go back">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+        </svg>
+    </button>
+    <script src="<%= scriptUrl %>" async></script>
+    <script>
+        var session_token = '<%= token || "" %>';
+        
+        function setupErrorHandling() {
+            if (!window.travelClient) {
+                return;
+            }
+            
+            // Set up error event listener per Travel SDK documentation
+            // https://developers.accessdevelopment.com/travel-sdk/travel-client-SDK/on-error-method
+            window.travelClient.on("error", function(event) {
+                console.log("Travel Client Error Code: " + event.error_code);
+                console.log("Travel Client Error Message: " + event.error_message);
+                console.log("Travel Client Error Type: " + event.error_type);
+                console.log("Travel Client Error Status: " + event.status);
+                
+                // Handle errors based on error_type
+                if (event.error_type === "error") {
+                    // High priority errors - may stop the travel application
+                    console.error("Travel Client Critical Error:", {
+                        error_code: event.error_code,
+                        error_message: event.error_message,
+                        status: event.status
+                    });
+                } else if (event.error_type === "warn") {
+                    // Low priority warnings - application may still run
+                    console.warn("Travel Client Warning:", {
+                        error_code: event.error_code,
+                        error_message: event.error_message,
+                        status: event.status
+                    });
+                }
+            });
+        }
+        
+        function setupUpdateHandling() {
+            if (!window.travelClient) {
+                return;
+            }
+            
+            // Set up update event listener per Travel SDK documentation
+            // https://developers.accessdevelopment.com/travel-sdk/travel-client-SDK/on-update-method
+            window.travelClient.on("update", function(event) {
+                // Handle specific update codes
+                switch (event.update_code) {
+                    case "TRAVEL_CLIENT_LOADED":
+                        console.log("Travel Client loaded successfully", {
+                            update_code: event.update_code,
+                            update_message: event.update_message
+                        });
+                        break;
+                        
+                    case "ACTIVE_SESSION_PING":
+                        // User is active - can be used to keep session alive or measure inactivity
+                        // Note: This fires frequently, so we'll use a more concise log
+                        console.log("Active session ping");
+                        break;
+                        
+                    case "SESSION_NOT_FOUND":
+                        // Session not found - stops the travel application
+                        console.error("Session Not Found:", {
+                            update_code: event.update_code,
+                            update_message: event.update_message
+                        });
+                        break;
+                        
+                    case "TRAVEL_CLIENT_SESSION_EXPIRED":
+                        // Session expired after 60 minutes of inactivity
+                        console.error("Session Expired:", {
+                            update_code: event.update_code,
+                            update_message: event.update_message
+                        });
+                        break;
+                        
+                    default:
+                        console.log("Travel Client Update:", {
+                            update_code: event.update_code,
+                            update_message: event.update_message
+                        });
+                }
+            });
+        }
+        
+        function setupEventHandler() {
+            if (!window.travelClient) {
+                return;
+            }
+            
+            // Set up event listener per Travel SDK documentation
+            // https://developers.accessdevelopment.com/travel-sdk/travel-client-SDK/on-event-method
+            window.travelClient.on("event", function(event) {
+                // Handle specific event codes
+                if (event.event_code === "FLIGHT_SEARCH") {
+                    console.log("User performed a flight search:", {
+                        event_code: event.event_code,
+                        event_detail: event.event_detail,
+                        event_dts: event.event_dts
+                    });
+                } else {
+                    console.log("Travel Client Event:", {
+                        event_code: event.event_code,
+                        event_detail: event.event_detail,
+                        event_dts: event.event_dts
+                    });
+                }
+            });
+        }
+        
+        function initTravelClient() {
+            if (!session_token) {
+                console.error('Session token is missing');
+                return;
+            }
+            
+            if (!window.travelClient) {
+                console.error('Travel Client SDK not loaded');
+                return;
+            }
+            
+            // Set up all event handlers before initializing
+            setupErrorHandling();
+            setupUpdateHandling();
+            setupEventHandler();
+            
+            try {
+                window.travelClient.start({
+                    session_token: session_token,
+                    container: "#travelClient"
+                });
+                console.log('Travel Client initialized successfully using:');
+                console.log('window.travelClient.start({');
+                console.log('  session_token: session_token,');
+                console.log('  container: "#travelClient"');
+                console.log('})');
+            } catch (error) {
+                console.error('Error initializing Travel Client:', error);
+            }
+        }
+        
+        // Wait for script to fully load
+        function waitForSDK() {
+            if (window.travelClient) {
+                initTravelClient();
+            } else {
+                setTimeout(waitForSDK, 100);
+            }
+        }
+        
+        // Start checking once page is loaded
+        if (document.readyState === 'complete') {
+            waitForSDK();
+        } else {
+            window.addEventListener('load', function() {
+                waitForSDK();
+            });
+        }
+
+        // Back button functionality
+        const backButton = document.getElementById('backButton');
+        backButton.addEventListener('click', function() {
+            window.history.back();
+        });
+
+        // Show back button after 5 seconds with fade-in
+        setTimeout(function() {
+            backButton.classList.add('visible');
+        }, 5000);
+    </script>
+</body>
+</html>
+

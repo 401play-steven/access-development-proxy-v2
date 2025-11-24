@@ -4,6 +4,7 @@ const express = require("express");
 const morgan = require("morgan");
 const cors = require("cors");
 const path = require("path");
+const fs = require("fs");
 
 const app = express();
 
@@ -104,6 +105,32 @@ app.get("/webview", async (req, res) => {
   });
 });
 
+// Endpoint for webview without frame (standalone page)
+app.get("/no-frame", async (req, res) => {
+  const {
+    session_token,
+    authToken,
+  } = req.query;
+
+  let sessionToken = session_token;
+
+  // If session_token is not provided, generate one from authToken
+  if (!sessionToken && authToken) {
+    let userData = await getUserData(authToken);
+    sessionToken = await getSessionToken(userData);
+  }
+
+  if (!sessionToken) {
+    return res.status(400).send("Missing session_token or authToken");
+  }
+
+  // Serve the webview page with Travel SDK (no frame wrapper)
+  res.render("webview", {
+    token: sessionToken,
+    scriptUrl: process.env.SCRIPT_URL,
+  });
+});
+
 // Webview for My Trips
 app.get("/webview-my-trips", async (req, res) => {
   const { session_token, authToken } = req.query;
@@ -185,6 +212,58 @@ app.get("/travel/framed/car-search", (req, res) => {
   res.render("frame", {
     webviewUrl,
   });
+});
+
+// Test endpoint - reads test.json and redirects to /travel/framed with session token
+app.get("/test", async (req, res) => {
+  try {
+    // Read test.json from root directory
+    const testDataPath = path.resolve(__dirname, "../test.json");
+    const testData = JSON.parse(fs.readFileSync(testDataPath, "utf8"));
+
+    // Generate session token from test data
+    const sessionToken = await getSessionToken(testData, testData.scope || "travel");
+
+    if (!sessionToken) {
+      return res.status(500).send("Failed to generate session token");
+    }
+
+    // Redirect to /travel/framed with the session token
+    res.redirect(`/travel/framed?session_token=${encodeURIComponent(sessionToken)}`);
+  } catch (error) {
+    console.error("Error in /test route:", error);
+    res.status(500).send(`Error: ${error.message}`);
+  }
+});
+
+// Back button test endpoint - reads test.json and loads Access Development with back button
+app.get("/back-button", async (req, res) => {
+  try {
+    // Read test.json from root directory
+    const testDataPath = path.resolve(__dirname, "../test.json");
+    const testData = JSON.parse(fs.readFileSync(testDataPath, "utf8"));
+
+    // Generate session token from test data
+    const sessionToken = await getSessionToken(testData, testData.scope || "travel");
+
+    if (!sessionToken) {
+      return res.status(500).send("Failed to generate session token");
+    }
+
+    // Render the back-button page with the session token
+    res.render("back-button", {
+      token: sessionToken,
+      scriptUrl: process.env.SCRIPT_URL,
+    });
+  } catch (error) {
+    console.error("Error in /back-button route:", error);
+    res.status(500).send(`Error: ${error.message}`);
+  }
+});
+
+// Test page for back button
+app.get("/test-back-button", (req, res) => {
+  res.render("test-back-button");
 });
 
 app.all(/.*/, (req, res) => {
