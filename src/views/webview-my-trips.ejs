@@ -157,12 +157,18 @@
             try {
                 window.travelClient.start({
                     session_token: session_token,
-                    container: "#travelClient"
+                    container: "#travelClient",
+                    navigate_to: {
+                        view: "my-trips"
+                    }
                 });
                 console.log('Travel Client initialized successfully using:');
                 console.log('window.travelClient.start({');
                 console.log('  session_token: session_token,');
-                console.log('  container: "#travelClient"');
+                console.log('  container: "#travelClient",');
+                console.log('  navigate_to: {');
+                console.log('    view: "my-trips"');
+                console.log('  }');
                 console.log('})');
             } catch (error) {
                 console.error('Error initializing Travel Client:', error);

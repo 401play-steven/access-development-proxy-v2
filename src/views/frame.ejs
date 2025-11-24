@@ -105,10 +105,39 @@
 
         .footer-image {
             width: 100%;
+            position: relative;
+        }
+
+        .footer-image img {
+            width: 100%;
             height: auto;
             display: block;
             object-fit: cover;
             background: #fff;
+        }
+
+        .footer-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            pointer-events: none;
+        }
+
+        .footer-click-area {
+            pointer-events: auto;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .footer-click-area.left-area {
+            flex: 3;
+        }
+
+        .footer-click-area.right-area {
+            flex: 1;
         }
 
         .content-wrapper {
@@ -116,6 +145,27 @@
             flex-direction: column;
             height: calc(100% - 44px);
             width: 100%;
+        }
+
+        .webview-container.hidden {
+            display: none;
+        }
+
+        .away-message {
+            display: none;
+            width: 100%;
+            flex: 1;
+            background: #fff;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            color: #666;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .away-message.visible {
+            display: flex;
         }
     </style>
 </head>
@@ -135,7 +185,7 @@
             </div>
             <div class="content-wrapper">
                 <img src="/header.png" alt="Header" class="header-image" />
-                <div class="webview-container">
+                <div class="webview-container" id="webviewContainer">
                     <iframe 
                         id="webviewFrame" 
                         class="webview-iframe" 
@@ -143,9 +193,39 @@
                         allow="geolocation; microphone; camera; payment; fullscreen">
                     </iframe>
                 </div>
-                <img src="/footer.png" alt="Footer" class="footer-image" />
+                <div class="away-message" id="awayMessage">
+                    You went somewhere else
+                </div>
+                <div class="footer-image">
+                    <img src="/footer.png" alt="Footer" />
+                    <div class="footer-overlay">
+                        <div class="footer-click-area left-area" id="leftFooterArea"></div>
+                        <div class="footer-click-area right-area" id="rightFooterArea"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+    <script>
+        let isAway = false;
+        const webviewContainer = document.getElementById('webviewContainer');
+        const awayMessage = document.getElementById('awayMessage');
+        const leftFooterArea = document.getElementById('leftFooterArea');
+        const rightFooterArea = document.getElementById('rightFooterArea');
+
+        leftFooterArea.addEventListener('click', function() {
+            isAway = true;
+            webviewContainer.classList.add('hidden');
+            awayMessage.classList.add('visible');
+        });
+
+        rightFooterArea.addEventListener('click', function() {
+            if (isAway) {
+                isAway = false;
+                webviewContainer.classList.remove('hidden');
+                awayMessage.classList.remove('visible');
+            }
+        });
+    </script>
 </body>
 </html>

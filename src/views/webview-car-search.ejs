@@ -157,12 +157,28 @@
             try {
                 window.travelClient.start({
                     session_token: session_token,
-                    container: "#travelClient"
+                    container: "#travelClient",
+                    navigate_to: {
+                        view: "cars",
+                        destination: "MCO - Orlando International Airport - Orlando United States",
+                        return_destination: "TPA - Tampa International Airport - Tampa United States",
+                        pickup_date_time: "2024-04-05T10:00",
+                        return_date_time: "2024-04-10T14:00",
+                        age_criteria_met: true,
+                    }
                 });
                 console.log('Travel Client initialized successfully using:');
                 console.log('window.travelClient.start({');
                 console.log('  session_token: session_token,');
-                console.log('  container: "#travelClient"');
+                console.log('  container: "#travelClient",');
+                console.log('  navigate_to: {');
+                console.log('    view: "cars",');
+                console.log('    destination: "MCO - Orlando International Airport - Orlando United States",');
+                console.log('    return_destination: "TPA - Tampa International Airport - Tampa United States",');
+                console.log('    pickup_date_time: "2024-04-05T10:00",');
+                console.log('    return_date_time: "2024-04-10T14:00",');
+                console.log('    age_criteria_met: true,');
+                console.log('  }');
                 console.log('})');
             } catch (error) {
                 console.error('Error initializing Travel Client:', error);

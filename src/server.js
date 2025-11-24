@@ -54,18 +54,31 @@ const getUserData = async (authToken) => {
   return data;
 };
 
-app.post("/", async (req, res) => {
+app.post("/get_session_token", async (req, res) => {
   try {
     const userData = req.body;
-    const { data, response: tokenResponse } = await createSessionToken(userData, userData?.scope);
-    
-    if (tokenResponse.ok) {
-      res.status(200).json({ data });
-    } else {
-      res.status(400).json({ message: data?.message });
+
+    // ---- VALIDATION (recommended) ----
+    if (!userData?.member_key && !userData?.access_member_key) {
+      return res.status(400).json({
+        message: "member_key is required to generate a session token.",
+      });
     }
+
+    // ---- ENFORCE SERVER-CONTROLLED SCOPE ----
+    const scope = "travel"; // Always enforce this here
+
+    const { data, response: tokenResponse } =
+      await createSessionToken(userData, scope);
+
+    if (tokenResponse.ok) {
+      return res.status(200).json({ data });
+    }
+
+    return res.status(400).json({ message: data?.message || "Token request failed" });
+
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: error.message });
   }
 });
 
@@ -91,40 +104,93 @@ app.get("/webview", async (req, res) => {
   });
 });
 
-// Endpoint to serve Travel SDK initialization with iPhone mockup
-app.get("/travel", async (req, res) => {
-  const {
-    session_token,
-    authToken,
-    path,
-    start_date,
-    end_date,
-    lat,
-    lng,
-    loc,
-  } = req.query;
+// Webview for My Trips
+app.get("/webview-my-trips", async (req, res) => {
+  const { session_token, authToken } = req.query;
 
   let sessionToken = session_token;
 
-  // If session_token is not provided, generate one from authToken
   if (!sessionToken && authToken) {
-    let userData = await getUserData(authToken);
+    const userData = await getUserData(authToken);
     sessionToken = await getSessionToken(userData);
   }
 
-  // Build webview URL with session token
-  const webviewUrl = `/webview?session_token=${encodeURIComponent(sessionToken || '')}${authToken ? '&authToken=' + encodeURIComponent(authToken) : ''}`;
+  res.render("webview-my-trips", {
+    token: sessionToken,
+    scriptUrl: process.env.SCRIPT_URL,
+  });
+});
 
-  // Serve an HTML page with iPhone mockup containing iframe
-  res.render("home", {
-    webviewUrl: webviewUrl,
+// Webview for My Trips
+app.get("/webview-car-search", async (req, res) => {
+  const { session_token, authToken } = req.query;
+
+  let sessionToken = session_token;
+
+  if (!sessionToken && authToken) {
+    const userData = await getUserData(authToken);
+    sessionToken = await getSessionToken(userData);
+  }
+
+  res.render("webview-car-search", {
+    token: sessionToken,
+    scriptUrl: process.env.SCRIPT_URL,
+  });
+});
+
+// Endpoint to serve Travel SDK initialization with iPhone mockup
+app.get("/travel/framed", (req, res) => {
+  const { session_token } = req.query;
+
+  if (!session_token) {
+    return res.status(400).send("Missing session_token");
+  }
+
+  const webviewUrl = `/webview?session_token=${encodeURIComponent(session_token)}`;
+
+  res.render("frame", {
+    webviewUrl,
+  });
+});
+
+// FOR TEST TO MY TRIPS
+app.get("/travel/framed/my-trips", (req, res) => {
+
+  console.log("YOU ARE HERE!!!!!!!")
+  const { session_token } = req.query;
+
+  if (!session_token) {
+    return res.status(400).send("Missing session_token");
+  }
+
+  const webviewUrl = `/webview-my-trips?session_token=${encodeURIComponent(session_token)}`;
+
+  res.render("frame", {
+    webviewUrl,
+  });
+});
+
+// FOR TEST TO MY TRIPS
+app.get("/travel/framed/car-search", (req, res) => {
+
+  console.log("YOU ARE HERE!!!!!!!")
+  const { session_token } = req.query;
+
+  if (!session_token) {
+    return res.status(400).send("Missing session_token");
+  }
+
+  const webviewUrl = `/webview-car-search?session_token=${encodeURIComponent(session_token)}`;
+
+  res.render("frame", {
+    webviewUrl,
   });
 });
 
 app.all(/.*/, (req, res) => {
   res
-    .status(404)
-    .json({ message: "Invalid endpoint. Please contact the admin." });
+    .status(401)
+    .json({ message: "Credentials are required to access this resource." });
 });
 
 const PORT = process.env.PORT || 3000;
